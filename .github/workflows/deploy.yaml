@@ -14,6 +14,11 @@ permissions: {}
 
 jobs:
   ci:
+    # Deploying publishes images to the hassio-addons org and dispatches to
+    # their app repository, neither of which a fork can do. This fork has no
+    # image: key either, so the Supervisor builds the app locally and never
+    # needs a published image. `needs: ci` skips the deploy job along with it.
+    if: github.repository == 'hassio-addons/app-vaultwarden'
     permissions:
       actions: read
       contents: write

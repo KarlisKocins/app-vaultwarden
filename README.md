@@ -20,6 +20,31 @@
 > Bugs in the app itself are best reported [upstream][upstream-issue], and bugs
 > in Vaultwarden to the [Vaultwarden project][vaultwarden].
 
+## Automatic updates
+
+A [scheduled workflow][update-workflow] checks for new [Vaultwarden
+releases][vaultwarden-releases] once a day. When it finds one, it bumps the
+`vaultwarden/server` image and the app version, builds the app image to
+confirm the change actually works, and only then commits to `main`. If the
+build fails — usually a stale apt pin rather than the release itself — it
+opens an issue instead of committing anything broken.
+
+The app version tracks the Vaultwarden version, so the Home Assistant
+Supervisor picks the bump up as a normal app update. Turn on **Auto update**
+in the app's page in Home Assistant to have it install on its own; without it,
+the update simply waits for you in the app store.
+
+To check right now instead of waiting for the schedule, run the
+`Vaultwarden update` workflow from the Actions tab. It also takes an optional
+version, to pin to a specific release.
+
+Locally, the same logic is one script:
+
+```bash
+./scripts/update-vaultwarden.sh          # latest release
+./scripts/update-vaultwarden.sh 1.37.1   # a specific one
+```
+
 [![Vaultwarden Version][vaultwarden-version-shield]][vaultwarden-releases]
 ![Project Stage][project-stage-shield]
 [![License][license-shield]](LICENSE.md)
@@ -158,6 +183,7 @@ SOFTWARE.
 [project-stage-shield]: https://img.shields.io/badge/project%20stage-experimental-yellow.svg
 [reddit]: https://reddit.com/r/homeassistant
 [repository]: https://github.com/hassio-addons/repository
+[update-workflow]: https://github.com/KarlisKocins/app-vaultwarden/blob/main/.github/workflows/vaultwarden-update.yaml
 [upstream-issue]: https://github.com/hassio-addons/app-vaultwarden/issues
 [upstream]: https://github.com/hassio-addons/app-vaultwarden
 [vaultwarden-releases]: https://github.com/dani-garcia/vaultwarden/releases

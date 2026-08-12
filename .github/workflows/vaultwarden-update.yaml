@@ -1,0 +1,108 @@
+---
+name: Vaultwarden update
+
+# yamllint disable-line rule:truthy
+on:
+  schedule:
+    # Every day at 05:17 UTC. Off the hour, so we are not queueing behind
+    # everyone else's on-the-hour cron jobs.
+    - cron: "17 5 * * *"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version to pin to (defaults to the latest release)
+        required: false
+        type: string
+
+permissions: {}
+
+concurrency:
+  group: vaultwarden-update
+  cancel-in-progress: false
+
+jobs:
+  update:
+    name: 🔄 Check for a new Vaultwarden release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+    steps:
+      - name: ⤵️ Check out code from GitHub
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: 🔍 Resolve the latest Vaultwarden release
+        id: bump
+        env:
+          VERSION: ${{ inputs.version }}
+        run: ./scripts/update-vaultwarden.sh "${VERSION}"
+
+      - name: 🏗️ Verify the app still builds
+        id: build
+        if: steps.bump.outputs.updated == 'true'
+        continue-on-error: true
+        shell: bash
+        run: |
+          build_from=$(sed -n 's|^  amd64: ||p' vaultwarden/build.yaml)
+          docker build \
+            --build-arg "BUILD_FROM=${build_from}" \
+            --build-arg "BUILD_ARCH=amd64" \
+            --build-arg "BUILD_VERSION=${{ steps.bump.outputs.latest }}" \
+            --tag "vaultwarden-app:${{ steps.bump.outputs.latest }}" \
+            vaultwarden 2>&1 | tee /tmp/build.log
+
+      - name: 🚀 Commit the new version
+        if: steps.bump.outputs.updated == 'true' && steps.build.outcome == 'success'
+        env:
+          CURRENT: ${{ steps.bump.outputs.current }}
+          LATEST: ${{ steps.bump.outputs.latest }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email \
+            "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit --all --message \
+            "⬆️ Update Vaultwarden to ${LATEST}
+
+          Bumps vaultwarden/server ${CURRENT} -> ${LATEST} and the app version,
+          so the Supervisor offers the update. Verified by building the app
+          image for amd64 in CI.
+
+          Release notes: https://github.com/dani-garcia/vaultwarden/releases/tag/${LATEST}"
+          git push
+
+      # The apt pins in the Dockerfile go stale on their own schedule, so a
+      # failure here usually means the pins need a bump, not Vaultwarden.
+      - name: 🚨 Report a failed build
+        if: steps.bump.outputs.updated == 'true' && steps.build.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          LATEST: ${{ steps.bump.outputs.latest }}
+          CURRENT: ${{ steps.bump.outputs.current }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          title="Vaultwarden ${LATEST} does not build"
+
+          if [ -n "$(gh issue list --state open --search "${title} in:title" \
+              --json number --jq '.[].number')" ]; then
+            echo "Already reported."
+            exit 0
+          fi
+
+          {
+            echo "Bumping \`vaultwarden/server\` from \`${CURRENT}\` to" \
+              "\`${LATEST}\` fails to build, so the version was **not**" \
+              "committed. This is most often a stale apt pin in the" \
+              "Dockerfile rather than a problem with the release itself."
+            echo
+            echo "[Failed run](${RUN_URL})"
+            echo
+            echo "<details><summary>Last 50 lines of the build log</summary>"
+            echo
+            echo '```'
+            tail -n 50 /tmp/build.log
+            echo '```'
+            echo
+            echo "</details>"
+          } > /tmp/issue.md
+
+          gh issue create --title "${title}" --body-file /tmp/issue.md
