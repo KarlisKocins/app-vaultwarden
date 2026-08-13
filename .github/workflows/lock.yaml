@@ -13,4 +13,10 @@ permissions:
 
 jobs:
   workflows:
+    # Locking stale threads is housekeeping for the upstream community repo,
+    # which this fork has no issue traffic for. It also fails everywhere right
+    # now: the shared workflow pins dessant/lock-threads v6.0.0, whose input
+    # validation caps github-token at 100 characters, and GITHUB_TOKEN outgrew
+    # that (fixed upstream in the action in v6.0.2, not yet picked up here).
+    if: github.repository == 'hassio-addons/app-vaultwarden'
     uses: hassio-addons/workflows/.github/workflows/lock.yaml@3846ae0fd09acec8ac1ac308ceacd052b9d01bec # v2.0.6
