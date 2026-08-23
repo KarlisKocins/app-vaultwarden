@@ -1,6 +1,6 @@
 ---
 name: Vaultwarden
-version: 1.37.1
+version: 1.37.2
 slug: bitwarden
 description: Open source password management solution (fork with faster Vaultwarden updates)
 url: https://github.com/KarlisKocins/app-vaultwarden
