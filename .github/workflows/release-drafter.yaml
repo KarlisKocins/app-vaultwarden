@@ -1,0 +1,21 @@
+---
+name: Release Drafter
+
+# yamllint disable-line rule:truthy
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  workflows:
+    # Drafting release notes from merged PRs is housekeeping for the
+    # upstream community repo. This fork has no PR-based release flow --
+    # its version is tracked in config.yaml and picked up by the
+    # Supervisor -- so a draft release per push would be noise.
+    if: github.repository == 'hassio-addons/app-vaultwarden'
+    uses: hassio-addons/workflows/.github/workflows/release-drafter.yaml@e0c532a7b0fb264b3ff0c718c2c0308a0c8c1390 # v4.0.0

@@ -1,0 +1,45 @@
+---
+name: Build check
+
+# yamllint disable-line rule:truthy
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: build-check-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    # Upstream's shared CI builds the image too, but its build job needs
+    # lint-app, which fails here by design: that linter requires
+    # `version: dev`, while this fork carries a real version so the
+    # Supervisor sees updates. The build never runs as a result, leaving
+    # stale Debian apt pins to surface only once someone installs the app.
+    # This job builds the image on its own so pin breakage is caught in CI.
+    name: 🏗️ Build amd64
+    runs-on: ubuntu-latest
+    steps:
+      - name: ⤵️ Check out code from GitHub
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: 🏗️ Build the app image
+        shell: bash
+        run: |
+          build_from=$(sed -n 's|^  amd64: ||p' vaultwarden/build.yaml)
+          version=$(sed -n 's|^version: ||p' vaultwarden/config.yaml)
+          docker build \
+            --build-arg "BUILD_FROM=${build_from}" \
+            --build-arg "BUILD_ARCH=amd64" \
+            --build-arg "BUILD_VERSION=${version}" \
+            --tag "vaultwarden-app:${version}" \
+            vaultwarden
