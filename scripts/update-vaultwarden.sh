@@ -16,7 +16,8 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-readonly repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+readonly repo_root
 readonly dockerfile="${repo_root}/vaultwarden/Dockerfile"
 readonly config="${repo_root}/vaultwarden/config.yaml"
 readonly readme="${repo_root}/README.md"
