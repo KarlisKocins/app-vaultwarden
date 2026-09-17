@@ -10,6 +10,11 @@
 # this fork has no image: key, so the Home Assistant Supervisor builds the app
 # locally and only offers an update when config.yaml's version changes.
 #
+# A rebuild that ships the same Vaultwarden release (a bumped apt pin, say) gets
+# a fourth segment instead: 1.37.3 -> 1.37.3.1. Bumping this script's target
+# resets it, which is intended. Do not use a 1.37.3-1 style suffix: that parses
+# as a semver pre-release and sorts *below* 1.37.3.
+#
 # Usage: scripts/update-vaultwarden.sh [version]
 # ==============================================================================
 set -o errexit
