@@ -177,5 +177,5 @@ SOFTWARE.
 [upstream-issue]: https://github.com/hassio-addons/app-vaultwarden/issues
 [upstream]: https://github.com/hassio-addons/app-vaultwarden
 [vaultwarden-releases]: https://github.com/dani-garcia/vaultwarden/releases
-[vaultwarden-version-shield]: https://img.shields.io/badge/vaultwarden-1.37.3-blue.svg
+[vaultwarden-version-shield]: https://img.shields.io/badge/vaultwarden-1.37.4-blue.svg
 [vaultwarden]: https://github.com/dani-garcia/vaultwarden
